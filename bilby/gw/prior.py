@@ -1141,9 +1141,14 @@ class CalibrationPriorDict(PriorDict):
                            boundary="reflective", correction_type=None):
         """
         Load in the calibration envelope.
-	@@ -1149,6 +1149,14 @@ def from_envelope_file(envelope_file, minimum_frequency,
+
+        This is a text file with columns
+
+        ::
+
             frequency median-amplitude median-phase -1-sigma-amplitude
             -1-sigma-phase +1-sigma-amplitude +1-sigma-phase
+
         There are two definitions of the calibration correction in the
         literature, one defines the correction as mapping calibrated strain
         to theoretical waveform templates (:code:`data`) and the other as
@@ -1162,7 +1167,14 @@ class CalibrationPriorDict(PriorDict):
         Parameters
         ==========
         envelope_file: str
-	@@ -1163,19 +1171,45 @@ def from_envelope_file(envelope_file, minimum_frequency,
+            Name of file to read in.
+        minimum_frequency: float
+            Minimum frequency for the spline.
+        maximum_frequency: float
+            Minimum frequency for the spline.
+        n_nodes: int
+            Number of nodes for the spline.
+        label: str
             Label for the names of the parameters, e.g., `recalib_H1_`
         boundary: None, 'reflective', 'periodic'
             The type of prior boundary to assign
@@ -1172,7 +1184,7 @@ class CalibrationPriorDict(PriorDict):
             produced by the LVK calibration groups assume :code:`data`.
             The default value will be removed in a future release and
             this will need to be explicitly specified.
-            ..versionadded XYZ
+
         Returns
         =======
         prior: PriorDict
