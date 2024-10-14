@@ -1138,7 +1138,7 @@ class CalibrationPriorDict(PriorDict):
     @staticmethod
     def from_envelope_file(envelope_file, minimum_frequency,
                            maximum_frequency, n_nodes, label,
-                           boundary="reflective", correction=None):
+                           boundary="reflective", correction_type=None):
         """
         Load in the calibration envelope.
 	@@ -1149,6 +1149,14 @@ def from_envelope_file(envelope_file, minimum_frequency,
@@ -1151,6 +1151,14 @@ class CalibrationPriorDict(PriorDict):
         (:code:`template`). Previously, :code:`template` was assumed,
         the default has changed to :code:`data`.
 
+        There are two definitions of the calibration correction in the
+        literature, one defines the correction as mapping calibrated strain
+        to theoretical waveform templates (:code:`data`) and the other as
+        mapping theoretical waveform templates to calibrated strain
+        (:code:`template`). Prior to version XYZ, :code:`template` was assumed,
+        the default changed to :code:`data` when the :code:`correction` argument
+        was added.
+
         Parameters
         ==========
         envelope_file: str
@@ -1158,9 +1166,12 @@ class CalibrationPriorDict(PriorDict):
             Label for the names of the parameters, e.g., `recalib_H1_`
         boundary: None, 'reflective', 'periodic'
             The type of prior boundary to assign
-        correction: str
-            How the correction is defined, either to the data (default) or
-            the template.
+        correction_type: str
+            How the correction is defined, either to the :code:`data`
+            (default) or the :code:`template`. In general, data products
+            produced by the LVK calibration groups assume :code:`data`.
+            The default value will be removed in a future release and
+            this will need to be explicitly specified.
             ..versionadded XYZ
         Returns
         =======
@@ -1168,35 +1179,39 @@ class CalibrationPriorDict(PriorDict):
             Priors for the relevant parameters.
             This includes the frequencies of the nodes which are _not_ sampled.
         """
-        if correction is None:
+        if correction_type is None:
             logger.warning(
                 "Calibration envelope correction type is not specified. "
                 "Assuming this correction maps calibrated data to theoretical "
                 "strain. If this is correct, this should be explicitly "
                 "specified via CalibrationPriorDict.from_envelope_file(..., "
-                "correction='data')."
+                "correction_type='data'). The other possibility is correction_type="
+                "'template', which maps theoretical strain to calibrated data."
             )
-            correction = "data"
-        if correction.lower() not in ["data", "template"]:
+            correction_type = "data"
+        if correction_type.lower() not in ["data", "template"]:
             raise ValueError(
                 "Calibration envelope correction should be one of 'data' or "
-                f"'template', found {correction}."
+                f"'template', found {correction_type}."
             )
+        logger.debug(
+            f"Supplied calibration correction will be applied to the {correction_type}"
+        )
 
         calibration_data = np.genfromtxt(envelope_file).T
         log_frequency_array = np.log(calibration_data[0])
 
-        if correction.lower() == "data":
+        if correction_type.lower() == "data":
             amplitude_median = 1 / calibration_data[1] - 1
             phase_median = -calibration_data[2]
-            amplitude_sigma = (1 / calibration_data[3] - 1 / calibration_data[5]) / 2
-            phase_sigma = (calibration_data[6] - calibration_data[4]) / 2
+            amplitude_sigma = abs(1 / calibration_data[3] - 1 / calibration_data[5]) / 2
+            phase_sigma = abs(calibration_data[6] - calibration_data[4]) / 2
         else:
             amplitude_median = calibration_data[1] - 1
             phase_median = calibration_data[2]
-            amplitude_sigma = (calibration_data[5] - calibration_data[3]) / 2
-            phase_sigma = (calibration_data[6] - calibration_data[4]) / 2
-
+            amplitude_sigma = abs(calibration_data[5] - calibration_data[3]) / 2
+            phase_sigma = abs(calibration_data[6] - calibration_data[4]) / 2
+    
         log_nodes = np.linspace(np.log(minimum_frequency),
                                 np.log(maximum_frequency), n_nodes)
 
